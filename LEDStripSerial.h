@@ -1,7 +1,7 @@
 /**
  * @file LEDStripSerial.h
  *
- * This class is just a nicer interface to the library in the folder 
+ * This class is just a nicer interface to the library in the folder
  * Serial_Port_Communication. 
  * 
  * @author Joshua Petrin
@@ -16,6 +16,8 @@
 #include <vector>
 #include <cstdint>
 
+// Forward declaration
+class LEDStripSerial;
 
 /**
  * @brief The direct USB serial interface class. Extends the 
@@ -36,15 +38,16 @@
  *          the default BAUD_9600, please ensure your platfrom supports your 
  *          baud rate. 
  */
-
-class LEDStripSerial;
-
 class LEDStripSerial : public BufferedAsyncSerial
 {
 private:
+  /// Private default constructor.
+  LEDStripSerial(void);
+
+protected:
   int bit_depth_;
   bool little_endian_system_;
-public:
+
   /**
    * @brief Pack a 12-bit RGB list of values.
    *
@@ -75,18 +78,19 @@ public:
   static size_t compress12Bit(unsigned char* data, size_t size);
 
   /**
-   * See above. Does the same thing essentially, but resizes `data` as well
-   * (e.g. `data.size()` will return the actual size of the buffer).
+   * @brief Pack a 12-bit RGB list of values.
+   * 
+   * Does the same thing as `compress12Bit(unsigned char*, size_t)` 
+   * essentially, but resizes `data` as well (e.g. `data.size()` will return 
+   * the actual size of the buffer).
    * 
    * @param  data An `std::vector` with RGB values to be compressed
    * @see compress12Bit(unsigned char* data, size_t size)
    */
   static std::vector<char> compress12Bit(const std::vector<char> &data);  
 
-  /// Private default constructor.
-  LEDStripSerial(void);
 
-//public:
+public:
 
   enum baud_rate { 
     BAUD_1200 = 1200,
@@ -118,22 +122,80 @@ public:
     LEDStripSerial::baud_rate rate = LEDStripSerial::baud_rate::BAUD_9600,
     LEDStripSerial::color_depth depth = LEDStripSerial::color_depth::BIT_12);
 
+  /**
+   * @brief Set the color depth of the receiving LED strip. 
+   *
+   * If set to `BIT_8`, all messages will pass through the stream unadulterated.
+   * If set to `BIT_12`, all messages will be sent as their shortened 12-bit 
+   * representations
+   * 
+   * @param depth The desired color depth of the signal. 
+   * 
+   * @see compress12Bit(unsigned char* data, size_t size)
+   */
   void setColorDepth(LEDStripSerial::color_depth depth)
   { bit_depth_ = depth; } 
 
+  /**
+   * @return The color depth this serial class is currently transmitting for.
+   */
   LEDStripSerial::color_depth getColorDepth() const
   { return LEDStripSerial::color_depth(bit_depth_); }
 
+  /**
+   * @brief Write a `char` array to the USB serial port. 
+   * @param data The data to send (8- or 12-bit RGB)
+   * @param size The length of the array to be considered
+   *
+   * @see AsyncSerial::write(const char *data, size_t size)
+   */
   void write(const char* data, size_t size);
 
+  /**
+   * @brief Write an `unsigned char` array to the USB serial port. 
+   * @param data The data to send (8- or 12-bit RGB)
+   * @param size The length of the array to be considered
+   */
   void write(const unsigned char* data, size_t size);
 
+  /**
+   * @brief Write a `std::vector<char>` to the USB serial port. 
+   * @param data The data to send (8- or 12-bit RGB)
+   *
+   * @see AsyncSerial::write(const std::vector<char> &data)
+   */
   void write(const std::vector<char> &data);
 
+  /**
+   * @brief Write a `uint16_t` array to the USB serial port. 
+   *
+   * It's assumed that an 8-bit color depth has values next to one another. 
+   * That is, `{0x1234, 0x5678, etc.}`, and no bytes are wasted. 
+   * It's assumed that a 12-bit color depth has one RGB value per `uint16_t`.
+   * That is, `{0x0123, 0x0456, 0x0789, etc.}`, with the first 4 bits wasted.
+   *
+   * Obviously, it would make very little sense to use this method with `BIT_8`
+   * bit depth. 
+   * 
+   * @param data The data to send (8- or 12-bit RGB)
+   * @param size The length of the array to be considered
+   */
   void write(const uint16_t* data, size_t size);
 
+  /**
+   * @brief Write a `std::vector<uint16_t>` to the USB serial port. 
+   * @param data The data to send (8- or 12-bit RGB)
+   *
+   * @see write(const uint16_t* data, size_t size)
+   */
   void write(const std::vector<uint16_t>& data);
 
+  /**
+   * @brief Write a `std::vector<uint8_t>` to the USB serial port. 
+   * @param data The data to send (8- or 12-bit RGB)
+   *
+   * @see write(const unsigned char* data, size_t size)
+   */
   void write(const std::vector<uint8_t>& data);
 
 };
